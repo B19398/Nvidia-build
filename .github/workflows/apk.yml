@@ -1,0 +1,47 @@
+name: APK derle
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: debug-keystore-v1
+
+      - name: Projeyi hazirla
+        run: |
+          mkdir www
+          cp index.html www/index.html
+          echo '{"name":"ajan-sohbet","version":"1.0.0","private":true,"dependencies":{"@capacitor/android":"^7.0.0","@capacitor/cli":"^7.0.0","@capacitor/core":"^7.0.0"}}' > package.json
+          echo '{"appId":"com.b1.ajansohbet","appName":"Ajan Sohbet","webDir":"www","backgroundColor":"#0e1013","plugins":{"CapacitorHttp":{"enabled":true}}}' > capacitor.config.json
+
+      - name: Android projesini olustur
+        run: |
+          npm install
+          npx cap add android
+          npx cap sync android
+
+      - name: APK derle
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ajan-sohbet-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
